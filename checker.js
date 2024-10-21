@@ -2,16 +2,14 @@ import fetch from 'node-fetch';
 
 const visitedLinks = new Set();  // Множество для хранения посещенных ссылок
 const errors = new Map()
-const MAX_CONCURRENT_REQUESTS = 5;
 let checkedLinks = 0
-const queue = []; 
-
+const initLink = 'https://developer.auroraos.ru/'
 // Проверка доступности ссылки
 async function checkLink(url, referrer) {
     if (visitedLinks.has(url)) {
         return;
     }
-    url = url.replace(/&amp;/g, '&');
+    url = url.replaceAll(/&amp;/g, '&');
     visitedLinks.add(url);
     checkedLinks += 1
 
@@ -23,22 +21,33 @@ async function checkLink(url, referrer) {
             },
             redirect: 'follow'
         });
-        
-        if (response.status >= 300 && response.status < 600) {
-            errors.set(url, { "referrer": referrer, "status": response.status});
+
+        if (!response.ok) {
+            errors.set(url, { "referrer": referrer, "status": response.status });
+            // console.log(url, errors.get(url))
+            return;
+        }
+
+        if (!url.startsWith(initLink)){
+          return;  
+        }
+
+        if (checkedLinks % 1000 == 0) {
+            console.log(`Проверено ${checkedLinks} ссылок`)
         }
 
 
-        if (response.ok) {
-            const html = await response.text();
-            extractLinks(html, url);
+        const html = await response.text();
+        const links = extractLinks(html, url);
+        for (const link of links) {
+            await checkLink(link, url)
         }
+
     } catch (error) {
-        errors.set(url, { "referrer": referrer, "status": error.message} );
+        errors.set(url, { "referrer": referrer, "status": error.message });
+        // console.log(url, errors.get(url))
     }
-    if (checkedLinks % 1000 == 0){
-        console.log(`Проверено ${checkedLinks} ссылок`)
-    }
+
 }
 
 
@@ -50,54 +59,36 @@ function extractLinks(html, baseUrl) {
 
     let match;
 
+    const result = []
+
     // Поиск href
     while ((match = linkRegex.exec(html)) !== null) {
         const href = match[1];
-        handleLink(href, baseUrl);
+        if (href.startsWith('mailto:')) {
+            continue
+        }
+        result.push(fixLink(href, baseUrl));
     }
 
     // Поиск src
     while ((match = srcRegex.exec(html)) !== null) {
         const src = match[1];
-        handleLink(src, baseUrl);
+        result.push(fixLink(src, baseUrl));
     }
+    return result
 }
 
 // Обработка ссылок
-async function handleLink(href, baseUrl) {
-    if (href.startsWith(baseUrl) && !visitedLinks.has(href)) {
-        addToQueue(href, baseUrl);
-    } else if (href.startsWith('/')) {
+function fixLink(href, baseUrl) {
+    if (href.startsWith(baseUrl)) {
+        return href
+    } else if (!href.startsWith('https:')) {
         const absoluteUrl = new URL(href, baseUrl).href;
-        if (!visitedLinks.has(absoluteUrl)) {
-            addToQueue(absoluteUrl, baseUrl);
-
-        }
+        return absoluteUrl
     }
+    return href
 }
 
-// очередь
-function addToQueue(url, referrer) {
-    queue.push(() => checkLink(url, referrer));
-    processNextInQueue();
-}
-
-let activeRequests = 0; 
-async function processNextInQueue() {
-    if (queue.length === 0 || activeRequests >= MAX_CONCURRENT_REQUESTS) {
-        // Если очередь пуста и нет активных запросов, выводим ошибки
-        if (queue.length === 0 && activeRequests === 0) {
-            outputErrors();
-        }
-        return;
-    }
-
-    activeRequests++;
-    const nextInQueue = queue.shift(); 
-    await nextInQueue();
-    activeRequests--; 
-    processNextInQueue(); 
-}
 
 // Вывод ошибок
 function outputErrors() {
@@ -114,4 +105,4 @@ function outputErrors() {
 // Получение ссылки из аргументов командной строки и запуск скрипта
 const startUrl = process.argv[2];
 console.log("Checking...")
-checkLink(startUrl, 'Initial Link');
+checkLink(startUrl, 'Initial Link').then(outputErrors);
