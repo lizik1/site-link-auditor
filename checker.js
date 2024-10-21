@@ -1,60 +1,114 @@
 import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';
 
 const visitedLinks = new Set();  // Множество для хранения посещенных ссылок
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const errors = new Map()
+const MAX_CONCURRENT_REQUESTS = 5;
+let checkedLinks = 0
+const queue = []; 
 
-
-// Функция для проверки доступности ссылки
+// Проверка доступности ссылки
 async function checkLink(url, referrer) {
     if (visitedLinks.has(url)) {
         return;
     }
-
+    url = url.replace(/&amp;/g, '&');
     visitedLinks.add(url);
+    checkedLinks += 1
 
     try {
-        await delay(1000);
         const response = await fetch(url, {
-            method: "HEAD",
+            method: "GET",
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
-            }
+            },
+            redirect: 'follow'
         });
+        
         if (response.status >= 300 && response.status < 600) {
-            console.log(`Link: ${url} | Referrer: ${referrer} | Status: ${response.status}`);
+            errors.set(url, { "referrer": referrer, "status": response.status});
         }
 
 
         if (response.ok) {
-            const html = await fetch(url).then(res => res.text());
+            const html = await response.text();
             extractLinks(html, url);
         }
     } catch (error) {
-        // if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
-        //     setTimeout(() => checkLink(url, referrer), 5000);
-        // }
-        console.error(`${url} | Referrer: ${referrer} | Status: ERROR (${error.message})`);
+        errors.set(url, { "referrer": referrer, "status": error.message} );
+    }
+    if (checkedLinks % 1000 == 0){
+        console.log(`Проверено ${checkedLinks} ссылок`)
     }
 }
 
-// Функция для извлечения ссылок из HTML-страницы
+
+// Извлечение href и src из HTML-страницы
 function extractLinks(html, baseUrl) {
-    const $ = cheerio.load(html);
-    $('a').each((i, element) => {
-        const href = $(element).attr('href');
-        if (href) {
-            // Пока проверяем только ссылки, ведущие на developer.aurora.ru
-            if (href.startsWith(baseUrl) && !visitedLinks.has(href)) {
-                checkLink(href, baseUrl);
-            } else if (href.startsWith('/')) {
-                const absoluteUrl = new URL(href, baseUrl).href
-                if (!visitedLinks.has(absoluteUrl)) {
-                    checkLink(absoluteUrl, baseUrl);
-                }
-            }
+    // Регулярное выражение для поиска ссылок и атрибутов src
+    const linkRegex = /href\s*=\s*["']([^"']+)["']/g;
+    const srcRegex = /src\s*=\s*["']([^"']+)["']/g;
+
+    let match;
+
+    // Поиск href
+    while ((match = linkRegex.exec(html)) !== null) {
+        const href = match[1];
+        handleLink(href, baseUrl);
+    }
+
+    // Поиск src
+    while ((match = srcRegex.exec(html)) !== null) {
+        const src = match[1];
+        handleLink(src, baseUrl);
+    }
+}
+
+// Обработка ссылок
+async function handleLink(href, baseUrl) {
+    if (href.startsWith(baseUrl) && !visitedLinks.has(href)) {
+        addToQueue(href, baseUrl);
+    } else if (href.startsWith('/')) {
+        const absoluteUrl = new URL(href, baseUrl).href;
+        if (!visitedLinks.has(absoluteUrl)) {
+            addToQueue(absoluteUrl, baseUrl);
+
         }
-    });
+    }
+}
+
+// очередь
+function addToQueue(url, referrer) {
+    queue.push(() => checkLink(url, referrer));
+    processNextInQueue();
+}
+
+let activeRequests = 0; 
+async function processNextInQueue() {
+    if (queue.length === 0 || activeRequests >= MAX_CONCURRENT_REQUESTS) {
+        // Если очередь пуста и нет активных запросов, выводим ошибки
+        if (queue.length === 0 && activeRequests === 0) {
+            outputErrors();
+        }
+        return;
+    }
+
+    activeRequests++;
+    const nextInQueue = queue.shift(); 
+    await nextInQueue();
+    activeRequests--; 
+    processNextInQueue(); 
+}
+
+// Вывод ошибок
+function outputErrors() {
+    if (errors.size > 0) {
+        console.log("Найдены ошибки:");
+        errors.forEach((value, key) => {
+            console.log(`URL: ${key}, Referrer: ${value.referrer}, Status: ${value.status}`);
+        });
+    } else {
+        console.log("No errors found.");
+    }
 }
 
 // Получение ссылки из аргументов командной строки и запуск скрипта
