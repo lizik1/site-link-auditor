@@ -87,13 +87,14 @@ export class LinkChecker {
         }
     }
 
-    run(){
-        console.log("Checking...");
-        this.checkLink(this.startUrl, 'Initial Link').then(() => this.outputErrors());
+    async run() {
+        await this.checkLink(this.startUrl, 'Initial Link');
+        this.outputErrors();
+        return this.errors
     }
-
 }
 
 // const startUrl = process.argv[2];
 // const linkChecker = new LinkChecker(startUrl);
-// linkChecker.run();
+// const result = await linkChecker.run();
+// console.log(result)
