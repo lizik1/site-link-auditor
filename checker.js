@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-class LinkChecker {
+export class LinkChecker {
     constructor(startUrl){
         this.visitedLinks = new Set(); 
         this.errors = new Map();
