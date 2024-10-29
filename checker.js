@@ -1,12 +1,13 @@
 import fetch from 'node-fetch';
 
 export class LinkChecker {
-    constructor(startUrl){
+    constructor(startUrl, recursion){
         this.visitedLinks = new Set(); 
         this.errors = new Map();
         this.checkedLinks = 0;
         this.rootHost = `${new URL(startUrl).protocol}//${new URL(startUrl).hostname}`;
         this.startUrl = startUrl;
+        this.recursion = recursion;
     }
 
     async checkLink(url, referrer, level = 0) {
@@ -37,12 +38,16 @@ export class LinkChecker {
                 return;
             }
 
+            if (!this.recursion){
+                return;
+            }
+
             // Парсим только HTML и внутренние ссылки
             if (!url.startsWith(this.rootHost) || !response.headers.get('content-type').match("text/html")) {
                 return;
             }
 
-            if (this.checkedLinks % 100 === 0) {
+            if (this.checkedLinks % 1000 === 0) {
                 console.log(`Проверено ${this.checkedLinks} ссылок`);
             }
 
@@ -95,6 +100,6 @@ export class LinkChecker {
 }
 
 // const startUrl = process.argv[2];
-// const linkChecker = new LinkChecker(startUrl);
+// const linkChecker = new LinkChecker(startUrl, false);
 // const result = await linkChecker.run();
 // console.log(result)
