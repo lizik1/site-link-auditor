@@ -2,9 +2,10 @@
   "name": "site-link-auditor",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js,",
   "scripts": {
-    "start": "node checker.ts"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "repository": {
     "type": "git",
