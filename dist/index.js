@@ -1,6 +1,4 @@
 import fetch from 'node-fetch';
-
-
 export class LinkChecker {
     visitedLinks;
     errors;
