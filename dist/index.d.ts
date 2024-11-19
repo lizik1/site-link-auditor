@@ -5,8 +5,9 @@ export declare class LinkChecker {
     private checkedLinks;
     private rootHost;
     private startUrl;
-    private recursion;
-    constructor(startUrl: string, recursion: boolean);
+    private depth;
+    private recursions;
+    constructor(startUrl: string, depth: number | undefined);
     private checkLink;
     private extractLinks;
     private outputErrors;

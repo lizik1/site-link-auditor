@@ -9,19 +9,23 @@ export class LinkChecker {
     private checkedLinks: number;
     private rootHost: string;
     private startUrl: string;
-    private recursion: boolean;
+    private depth: number | undefined
+    private recursions: number
 
-    constructor(startUrl: string, recursion: boolean) {
+    constructor(startUrl: string, depth: number | undefined) {
         this.visitedLinks = new Set(); 
         this.errors = new Map();
         this.checkedLinks = 0;
         this.rootHost = `${new URL(startUrl).protocol}//${new URL(startUrl).hostname}`;
         this.startUrl = startUrl;
-        this.recursion = recursion;
+        this.depth = depth;
+        this.recursions = 0;
     }
 
-    private async checkLink(url: string, referrer: string, level: number = 0): Promise<void> {
-        if (this.visitedLinks.has(url)) {
+    private async checkLink(url: string, referrer: string, depth: number | undefined): Promise<void> {
+        this.recursions++;
+        if (this.visitedLinks.has(url) || (depth != undefined && depth <= 0)) {
+            this.recursions--;
             return;
         }
 
@@ -30,7 +34,7 @@ export class LinkChecker {
 
         // если вдруг вышли за пределы сайта, то выведем в лог
         if (!referrer.startsWith(this.rootHost)) {
-            console.log(`${url} <- ${referrer} : total ${this.visitedLinks.size}`);
+            console.error(`${url} <- ${referrer} : total ${this.visitedLinks.size}`);
         }
 
         try {
@@ -42,18 +46,17 @@ export class LinkChecker {
                 redirect: 'follow',
             });
 
+          
             if (!response.ok) {
                 this.errors.set(url, { referrer, status: response.status });
-                console.log(url, this.errors.get(url));
-                return;
-            }
-
-            if (!this.recursion) {
+                console.error(url, this.errors.get(url));
+                this.recursions--;
                 return;
             }
 
             // Парсим только HTML и внутренние ссылки
-            if (!url.startsWith(this.rootHost) || !response.headers.get('content-type')?.includes("text/html")) {
+            if (!url.startsWith(this.rootHost) || !(response.headers.get('content-type')?.includes("text/html"))) {
+                this.recursions--;
                 return;
             }
 
@@ -64,13 +67,15 @@ export class LinkChecker {
             const html = await response.text();
             const links = this.extractLinks(html, url);
             for (const link of links) {
-                await this.checkLink(link, url, level + 1);
+                await this.checkLink(link, url, depth ? depth - 1: undefined);
             }
 
         } catch (error) {
             this.errors.set(url, { referrer, status: error instanceof Error ? error.message : 'Unknown error'  });
-            console.log(url, this.errors.get(url));
+            console.error(url, this.errors.get(url));
         }
+
+        this.recursions--;
     }
 
     // Извлечение href и src из HTML-страницы
@@ -104,7 +109,8 @@ export class LinkChecker {
     }
 
     public async run(): Promise<Map<string, ErrorInfo>> {
-        await this.checkLink(this.startUrl, 'Initial Link');
+        await this.checkLink(this.startUrl, 'Initial Link', this.depth);
+        console.log(`Незавершенных рекурсий: ${this.recursions}`)
         this.outputErrors();
         return this.errors;
     }
