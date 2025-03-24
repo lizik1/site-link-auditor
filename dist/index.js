@@ -2,14 +2,16 @@ import fetch from 'node-fetch';
 export class LinkChecker {
     startUrl;
     threads;
+    logs;
     errors = new Map();
     checkedLinks = 0;
     queue;
     visitedLinks = new Set();
     oneThread = [];
-    constructor(startUrl, threads = 1) {
+    constructor(startUrl, threads = 1, logs = false) {
         this.startUrl = startUrl;
         this.threads = threads;
+        this.logs = logs;
         this.queue = [{ url: startUrl, referrer: 'Init' }];
     }
     async checkLink(url, referrer, attempt = 1) {
@@ -26,11 +28,15 @@ export class LinkChecker {
             if (response.status === 429) {
                 if (this.threads === 1) {
                     if (attempt >= MAX_ATTEMPTS) {
-                        console.log(`Получен статус 429. Достигнуто максимальное число попыток для URL: ${url} `);
+                        if (this.logs) {
+                            console.log(`Получен статус 429. Достигнуто максимальное число попыток для URL: ${url} `);
+                        }
                         return [];
                     }
                     else {
-                        console.log(`Получен статус 429. Ожидание перед повторной попыткой...`);
+                        if (this.logs) {
+                            console.log(`Получен статус 429. Ожидание перед повторной попыткой...`);
+                        }
                         await new Promise(resolve => setTimeout(resolve, 5000));
                         return await this.checkLink(url, referrer, attempt + 1);
                     }
@@ -102,7 +108,7 @@ export class LinkChecker {
                     }
                 }
             }
-            if (this.checkedLinks - lastChecked > 100) {
+            if (this.logs && this.checkedLinks - lastChecked > 100) {
                 console.log(`Проверено ${this.checkedLinks} ссылок, в очереди ${this.queue.length}, ошибок ${this.errors.size}`);
                 lastChecked = this.checkedLinks;
             }
@@ -116,7 +122,7 @@ export class LinkChecker {
             this.checkedLinks += results.length;
         }
         // если есть ссылки с 429, то заменим очередь, переключимся на 1 поток и запустим заново
-        if (this.oneThread.length > 0) {
+        if (this.logs && this.oneThread.length > 0) {
             console.log(`Одно поточная проверка ошибок со статусом 429. Количество: ${this.oneThread.length}`);
             this.queue = [...this.oneThread];
             this.oneThread.length = 0;
@@ -129,15 +135,14 @@ export class LinkChecker {
     }
 }
 // пример использования
-// async function runLinkChecker() {
-//   console.time('Link checking');
-//   const startUrl = "https://developer.auroraos.ru/";
-//   const linkChecker = new LinkChecker(startUrl, 50);
-//   console.log(linkChecker.getErrors());
-//   await linkChecker.run();
-//   linkChecker.outputErrors();
-//   console.timeEnd('Link checking');
-// }
-// runLinkChecker().catch(e => {
-//   console.log('Ошибка при выполнении проверки ссылок:', e);
-// });
+async function runLinkChecker() {
+    console.time('Link checking');
+    const startUrl = "https://developer.auroraos.ru/";
+    const linkChecker = new LinkChecker(startUrl, 50, true);
+    await linkChecker.run();
+    linkChecker.outputErrors();
+    console.timeEnd('Link checking');
+}
+runLinkChecker().catch(e => {
+    console.log('Ошибка при выполнении проверки ссылок:', e);
+});

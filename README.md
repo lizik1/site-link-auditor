@@ -7,14 +7,26 @@
 ```bash
 npm i site-link-auditor
 ```
+Команда для запуска
+```
+npm run build && npm run start > errors.txt
+```
 Примеры использования находятся в папке *src/usageExamples/*.
 Пример полной рекурсивной проверки сайта:
 ```js
 import { LinkChecker } from 'site-link-auditor';
 
 
-const startUrl = "https://YOUR-LINK.ru/";
-const linkChecker = new LinkChecker(startUrl);
-const result = await linkChecker.run();
-console.log(result)
+casync function runLinkChecker() {
+  console.time('Link checking');
+  const startUrl = "https://YOUR-LINK.ru/";
+  const linkChecker = new LinkChecker(startUrl, 50, true);
+  await linkChecker.run();
+  linkChecker.outputErrors();
+  console.timeEnd('Link checking');
+}
+
+runLinkChecker().catch(e => {
+  console.log('Ошибка при выполнении проверки ссылок:', e);
+});
 ```
