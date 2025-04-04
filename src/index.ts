@@ -159,15 +159,15 @@ export class LinkChecker {
 }
 
 // пример использования
-async function runLinkChecker() {
-  console.time('Link checking');
-  const startUrl = "http://127.0.0.1:5500/page.html";
-  const linkChecker = new LinkChecker(startUrl, 50, true);
-  await linkChecker.run();
-  linkChecker.outputErrors();
-  console.timeEnd('Link checking');
-}
+// async function runLinkChecker() {
+//   console.time('Link checking');
+//   const startUrl = "http://example.ru";
+//   const linkChecker = new LinkChecker(startUrl, 50, true);
+//   await linkChecker.run();
+//   linkChecker.outputErrors();
+//   console.timeEnd('Link checking');
+// }
 
-runLinkChecker().catch(e => {
-  console.log('Ошибка при выполнении проверки ссылок:', e);
-});
+// runLinkChecker().catch(e => {
+//   console.log('Ошибка при выполнении проверки ссылок:', e);
+// });
