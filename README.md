@@ -10,7 +10,7 @@ const linkChecker = new LinkChecker(startUrl, 50, true);
 ```bash
 npm i site-link-auditor
 ```
-Команда для запуска
+Команда для запуска:
 ```
 npm run build && npm run start > errors.txt
 ```
