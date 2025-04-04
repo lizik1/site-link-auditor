@@ -1,6 +1,10 @@
 {
   "name": "site-link-auditor",
+<<<<<<< HEAD
   "version": "2.0.0",
+=======
+  "version": "3.0.4",
+>>>>>>> PORTAL-568
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -8,7 +12,11 @@
   },
   "scripts": {
     "build": "tsc",
+<<<<<<< HEAD
     "start": "node dist/index.js"
+=======
+    "start": "node --max-old-space-size=8096 dist/index.js"
+>>>>>>> PORTAL-568
   },
   "repository": {
     "type": "git",

@@ -1,15 +1,17 @@
 import { ErrorInfo } from './types/ErrorTypes.js';
 export declare class LinkChecker {
-    private visitedLinks;
+    private startUrl;
+    private threads;
+    private logs;
     private errors;
     private checkedLinks;
-    private rootHost;
-    private startUrl;
-    private depth;
-    private recursions;
-    constructor(startUrl: string, depth: number | undefined);
+    private queue;
+    private visitedLinks;
+    private readonly oneThread;
+    constructor(startUrl: string, threads?: number, logs?: boolean);
     private checkLink;
     private extractLinks;
-    private outputErrors;
-    run(): Promise<Map<string, ErrorInfo>>;
+    outputErrors(): void;
+    run(): Promise<void>;
+    getErrors(): Map<string, ErrorInfo>;
 }

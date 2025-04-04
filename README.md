@@ -1,20 +1,34 @@
 # Site link Auditor
 ## Описание
-Скрипт проверяет доступность ссылок на переданной странице. Возможна проверка страниц по глубине рекурсии. При добавлении параметра depth=1, скрипт проверит только саму ссылку, при указании depth=2 проверит саму страницу и ссылки на переданной странице, что соответствует глубине рекурсии 2 и т.д. В случае, если нужна полная рекурсивная проверка сайта, просто не используйте параметр depth при создании экземпляра класса. 
-
+Скрипт предназначен для проверки доступности ссылок на указанной веб-странице. Процесс проверки организован с использованием стека, в который добавляются новые ссылки. Чтобы обеспечить эффективность, проверки выполняются параллельно, и вы можете указать количество потоков для выполнения. Для этого при создании экземпляра нужно указать число потоков:
+```js
+const linkChecker = new LinkChecker(startUrl, 50, true);
+```
+Для ссылок, которые возвращают статус 429 (Слишком много запросов), предусмотрена специальная обработка — они проверяются в однопоточном режиме.
 ## Использование
 Для начала необходимо установить зависимости с помощью команды
 ```bash
 npm i site-link-auditor
 ```
-Примеры использования находятся в папке *src/usageExamples/*.
+Команда для запуска
+```
+npm run build && npm run start > errors.txt
+```
 Пример полной рекурсивной проверки сайта:
 ```js
 import { LinkChecker } from 'site-link-auditor';
 
 
-const startUrl = "https://YOUR-LINK.ru/";
-const linkChecker = new LinkChecker(startUrl);
-const result = await linkChecker.run();
-console.log(result)
+casync function runLinkChecker() {
+  console.time('Link checking');
+  const startUrl = "https://YOUR-LINK.ru/";
+  const linkChecker = new LinkChecker(startUrl, 50, true);
+  await linkChecker.run();
+  linkChecker.outputErrors();
+  console.timeEnd('Link checking');
+}
+
+runLinkChecker().catch(e => {
+  console.log('Ошибка при выполнении проверки ссылок:', e);
+});
 ```
