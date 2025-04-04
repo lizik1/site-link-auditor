@@ -75,6 +75,7 @@ export class LinkChecker {
 
   // Извлечение href и src из HTML-страницы
   private extractLinks(html: string, baseUrl: string): QueueType[] {
+    html = html.replace(/<!--.*?-->/g, "");
     const linkAndSrcRegex = /(?:href|src)\s*=\s*["']([^"']+)["']/g;
     const result = new Set<QueueType>();
     let match: RegExpExecArray | null;
@@ -158,15 +159,15 @@ export class LinkChecker {
 }
 
 // пример использования
-// async function runLinkChecker() {
-//   console.time('Link checking');
-//   const startUrl = "https://developer.auroraos.ru/";
-//   const linkChecker = new LinkChecker(startUrl, 50, true);
-//   await linkChecker.run();
-//   linkChecker.outputErrors();
-//   console.timeEnd('Link checking');
-// }
+async function runLinkChecker() {
+  console.time('Link checking');
+  const startUrl = "http://127.0.0.1:5500/page.html";
+  const linkChecker = new LinkChecker(startUrl, 50, true);
+  await linkChecker.run();
+  linkChecker.outputErrors();
+  console.timeEnd('Link checking');
+}
 
-// runLinkChecker().catch(e => {
-//   console.log('Ошибка при выполнении проверки ссылок:', e);
-// });
+runLinkChecker().catch(e => {
+  console.log('Ошибка при выполнении проверки ссылок:', e);
+});

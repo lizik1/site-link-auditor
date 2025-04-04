@@ -64,6 +64,7 @@ export class LinkChecker {
     }
     // Извлечение href и src из HTML-страницы
     extractLinks(html, baseUrl) {
+        html = html.replace(/<!--.*?-->/g, "");
         const linkAndSrcRegex = /(?:href|src)\s*=\s*["']([^"']+)["']/g;
         const result = new Set();
         let match;
@@ -137,7 +138,7 @@ export class LinkChecker {
 // пример использования
 async function runLinkChecker() {
     console.time('Link checking');
-    const startUrl = "https://developer.auroraos.ru/";
+    const startUrl = "http://127.0.0.1:5500/page.html";
     const linkChecker = new LinkChecker(startUrl, 50, true);
     await linkChecker.run();
     linkChecker.outputErrors();
