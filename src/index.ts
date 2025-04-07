@@ -75,7 +75,7 @@ export class LinkChecker {
 
   // Извлечение href и src из HTML-страницы
   private extractLinks(html: string, baseUrl: string): QueueType[] {
-    html = html.replace(/<!--.*?-->/g, "");
+    html = html.replace(/<!--[\s\S]*?-->/g, "");
     const linkAndSrcRegex = /(?:href|src)\s*=\s*["']([^"']+)["']/g;
     const result = new Set<QueueType>();
     let match: RegExpExecArray | null;
