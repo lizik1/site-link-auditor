@@ -20,9 +20,11 @@ export class LinkChecker {
             const response = await fetch(url, {
                 method: "GET",
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36',
+                    'Cookie': '_ignoreAutoLogin=1; signin=autosignin'
                 },
                 redirect: 'follow',
+                follow: 20,
                 signal: AbortSignal.timeout(15000)
             });
             if (response.status === 429) {
