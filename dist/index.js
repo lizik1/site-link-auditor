@@ -15,6 +15,7 @@ export class LinkChecker {
         this.queue = [{ url: startUrl, referrer: 'Init' }];
     }
     async checkLink(url, referrer, attempt = 1) {
+        const isProxyLink = url.includes('/git/');
         const MAX_ATTEMPTS = 20;
         try {
             const response = await fetch(url, {
@@ -53,7 +54,7 @@ export class LinkChecker {
                 return [];
             }
             // Парсим только HTML и внутренние ссылки не выходя за пределы стартового url
-            if (!url.startsWith(this.startUrl) || !(response.headers.get('content-type')?.includes("text/html"))) {
+            if (!url.startsWith(this.startUrl) || !(response.headers.get('content-type')?.includes("text/html") || isProxyLink)) {
                 return [];
             }
             const html = await response.text();
@@ -139,13 +140,13 @@ export class LinkChecker {
 }
 // пример использования
 // async function runLinkChecker() {
-//   console.time('Link checking');
-//   const startUrl = "http://example.ru";
-//   const linkChecker = new LinkChecker(startUrl, 50, true);
-//   await linkChecker.run();
-//   linkChecker.outputErrors();
-//   console.timeEnd('Link checking');
+//     console.time('Link checking');
+//     const startUrl = "https://example.ru/";
+//     const linkChecker = new LinkChecker(startUrl, 50, true);
+//     await linkChecker.run();
+//     linkChecker.outputErrors();
+//     console.timeEnd('Link checking');
 // }
 // runLinkChecker().catch(e => {
-//   console.log('Ошибка при выполнении проверки ссылок:', e);
+//     console.log('Ошибка при выполнении проверки ссылок:', e);
 // });
